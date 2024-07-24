@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using CustomerManagerWebApiByAlp.Data;
 using CustomerManagerWebApiByAlp.Models;
 using CustomerManagerWebApiByAlp.Repositories;
@@ -15,36 +17,64 @@ namespace CustomerManagerWebApiByAlp.Repositories
             _context = context;
         }
 
-        public IEnumerable<Customer> GetAllCustomers()
+        public async Task<IEnumerable<Customer>> GetAllCustomersAsync()
         {
-            return _context.Customers.ToList();
+            return await _context.Customers
+                                 .Include(c => c.Emails)
+                                 .Include(c => c.MobilePhones)
+                                 .ToListAsync();
         }
 
-        public Customer GetCustomerById(int id)
+        public async Task<Customer> GetCustomerByIdAsync(int id)
         {
-            return _context.Customers.Find(id);
+            return await _context.Customers
+                                 .Include(c => c.Emails)
+                                 .Include(c => c.MobilePhones)
+                                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 
-        public void CreateCustomer(Customer customer)
+        public async Task CreateCustomerAsync(Customer customer)
         {
             _context.Customers.Add(customer);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
-        public void UpdateCustomer(Customer customer)
+        public async Task<bool> UpdateCustomerAsync(Customer customer)
         {
-            _context.Customers.Update(customer);
-            _context.SaveChanges();
-        }
-
-        public void DeleteCustomer(int id)
-        {
-            var customer = _context.Customers.Find(id);
-            if (customer != null)
+            _context.Entry(customer).State = EntityState.Modified;
+            try
             {
-                _context.Customers.Remove(customer);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
+                return true;
             }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!await CustomerExists(customer.Id))
+                {
+                    return false;
+                }
+                else
+                {
+                    throw;
+                }
+            }
+        }
+
+        public async Task<bool> DeleteCustomerAsync(int id)
+        {
+            var customer = await _context.Customers.FindAsync(id);
+            if (customer == null)
+            {
+                return false;
+            }
+            _context.Customers.Remove(customer);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        private async Task<bool> CustomerExists(int id)
+        {
+            return await _context.Customers.AnyAsync(e => e.Id == id);
         }
     }
 }

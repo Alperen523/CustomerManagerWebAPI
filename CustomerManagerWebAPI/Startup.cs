@@ -30,6 +30,12 @@ public class Startup
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<ICustomerService, CustomerService>();
 
+        services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IEmailRepository, EmailRepository>();
+
+        services.AddScoped<IMobilePhoneService, MobilePhoneService>();
+        services.AddScoped<IMobilePhoneRepository, MobilePhoneRepository>();
+
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserService, UserService>();
 
@@ -37,12 +43,24 @@ public class Startup
         services.AddScoped<ILoyaltyService, LoyaltyService>();
 
         services.AddScoped<ICampaignService, CampaignService>();
+        services.AddScoped<ICampaignRepository, CampaignRepository>();
 
         services.AddAutoMapper(typeof(Startup));
         services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "My API", Version = "v1" });
         });
+        services.AddCors(options =>
+        {
+            options.AddPolicy("AllowAllOrigins",
+                builder =>
+                {
+                    builder.AllowAnyOrigin()
+                           .AllowAnyMethod()
+                           .AllowAnyHeader();
+                });
+        });
+
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -55,6 +73,7 @@ public class Startup
         app.UseHttpsRedirection();
         app.UseRouting();
         app.UseAuthorization();
+        app.UseCors("AllowAllOrigins");
         app.UseSwagger();
         app.UseSwaggerUI(c =>
         {

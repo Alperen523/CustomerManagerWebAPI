@@ -1,41 +1,50 @@
-﻿using System.Collections.Generic;
+﻿using AutoMapper;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using CustomerManagerWebApiByAlp.Models;
 using CustomerManagerWebApiByAlp.Repositories;
+using CustomerManagerWebApiByAlp.Services;
 
 namespace CustomerManagerWebApiByAlp.Services
 {
     public class CustomerService : ICustomerService
     {
         private readonly ICustomerRepository _customerRepository;
+        private readonly IMapper _mapper;
 
-        public CustomerService(ICustomerRepository customerRepository)
+        public CustomerService(ICustomerRepository customerRepository, IMapper mapper)
         {
             _customerRepository = customerRepository;
+            _mapper = mapper;
         }
 
-        public IEnumerable<Customer> GetAllCustomers()
+        public async Task<IEnumerable<CustomerDto>> GetAllCustomersAsync()
         {
-            return _customerRepository.GetAllCustomers();
+            var customers = await _customerRepository.GetAllCustomersAsync();
+            return _mapper.Map<IEnumerable<CustomerDto>>(customers);
         }
 
-        public Customer GetCustomerById(int id)
+        public async Task<CustomerDto> GetCustomerByIdAsync(int id)
         {
-            return _customerRepository.GetCustomerById(id);
+            var customer = await _customerRepository.GetCustomerByIdAsync(id);
+            return _mapper.Map<CustomerDto>(customer);
         }
 
-        public void CreateCustomer(Customer customer)
+        public async Task CreateCustomerAsync(CustomerDto customerDto)
         {
-            _customerRepository.CreateCustomer(customer);
+            var customer = _mapper.Map<Customer>(customerDto);
+            await _customerRepository.CreateCustomerAsync(customer);
         }
 
-        public void UpdateCustomer(Customer customer)
+        public async Task<bool> UpdateCustomerAsync(CustomerDto customerDto)
         {
-            _customerRepository.UpdateCustomer(customer);
+            var customer = _mapper.Map<Customer>(customerDto);
+            return await _customerRepository.UpdateCustomerAsync(customer);
         }
 
-        public void DeleteCustomer(int id)
+        public async Task<bool> DeleteCustomerAsync(int id)
         {
-            _customerRepository.DeleteCustomer(id);
+            return await _customerRepository.DeleteCustomerAsync(id);
         }
     }
 }

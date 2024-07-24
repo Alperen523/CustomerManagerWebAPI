@@ -1,14 +1,15 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using CustomerManagerWebApiByAlp.Models;
 
 namespace CustomerManagerWebApiByAlp.Repositories
 {
     public interface ICustomerRepository
     {
-        IEnumerable<Customer> GetAllCustomers();
-        Customer GetCustomerById(int id);
-        void CreateCustomer(Customer customer);
-        void UpdateCustomer(Customer customer);
-        void DeleteCustomer(int id);
+        Task<IEnumerable<Customer>> GetAllCustomersAsync();
+        Task<Customer> GetCustomerByIdAsync(int id);
+        Task CreateCustomerAsync(Customer customer);
+        Task<bool> UpdateCustomerAsync(Customer customer);
+        Task<bool> DeleteCustomerAsync(int id);
     }
 }

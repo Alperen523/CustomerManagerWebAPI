@@ -1,32 +1,36 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using CustomerManagerWebApiByAlp.Services;
+using AutoMapper;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using CustomerManagerWebApiByAlp.Models;
-
+using CustomerManagerWebApiByAlp.Services;
 
 namespace CustomerManagerWebApiByAlp.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")] 
+    [Route("api/[controller]")]
     public class CustomerController : ControllerBase
     {
         private readonly ICustomerService _customerService;
+        private readonly IMapper _mapper;
 
-        public CustomerController(ICustomerService customerService)
+        public CustomerController(ICustomerService customerService, IMapper mapper)
         {
             _customerService = customerService;
+            _mapper = mapper;
         }
 
         [HttpGet]
-        public IActionResult GetAllCustomers()
+        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomers()
         {
-            var customers = _customerService.GetAllCustomers();
+            var customers = await _customerService.GetAllCustomersAsync();
             return Ok(customers);
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetCustomerById(int id)
+        public async Task<ActionResult<CustomerDto>> GetCustomer(int id)
         {
-            var customer = _customerService.GetCustomerById(id);
+            var customer = await _customerService.GetCustomerByIdAsync(id);
             if (customer == null)
             {
                 return NotFound();
@@ -35,40 +39,35 @@ namespace CustomerManagerWebApiByAlp.Controllers
         }
 
         [HttpPost]
-        public IActionResult CreateCustomer(Customer customer)
+        public async Task<ActionResult<CustomerDto>> CreateCustomer(CustomerDto customerDto)
         {
-            _customerService.CreateCustomer(customer);
-            return CreatedAtAction(nameof(GetCustomerById), new { id = customer.Id }, customer);
+            await _customerService.CreateCustomerAsync(customerDto);
+            return CreatedAtAction(nameof(GetCustomer), new { id = customerDto.Id }, customerDto);
         }
 
         [HttpPut("{id}")]
-        public IActionResult UpdateCustomer(int id, Customer customer)
+        public async Task<IActionResult> UpdateCustomer(int id, CustomerDto customerDto)
         {
-            if (id != customer.Id)
+            if (id != customerDto.Id)
             {
                 return BadRequest();
             }
-
-            var existingCustomer = _customerService.GetCustomerById(id);
-            if (existingCustomer == null)
+            var result = await _customerService.UpdateCustomerAsync(customerDto);
+            if (!result)
             {
                 return NotFound();
             }
-
-            _customerService.UpdateCustomer(customer);
             return NoContent();
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteCustomer(int id)
+        public async Task<IActionResult> DeleteCustomer(int id)
         {
-            var customer = _customerService.GetCustomerById(id);
-            if (customer == null)
+            var result = await _customerService.DeleteCustomerAsync(id);
+            if (!result)
             {
                 return NotFound();
             }
-
-            _customerService.DeleteCustomer(id);
             return NoContent();
         }
     }
