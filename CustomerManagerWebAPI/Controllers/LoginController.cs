@@ -83,18 +83,19 @@ namespace CustomerManagerWebApiByAlp.Controllers
         }
 
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest loginRequest)
+        public async Task<IActionResult> Login([FromBody] LoginRequest loginRequest)
         {
-            if (IsValidUser(loginRequest))
+            if (await IsValidUser(loginRequest))
             {
                 var token = _tokenService.GenerateToken(loginRequest.Username);
                 return Ok(new { Token = token });
             }
             return Unauthorized();
         }
-        private bool IsValidUser(LoginRequest request)
+
+        private async Task<bool> IsValidUser(LoginRequest request)
         {
-            var user = _userService.ValidateUser(request.Username, request.Password);
+            var user = await _userService.ValidateUser(request.Username, request.Password);
             return user != null;
         }
 
