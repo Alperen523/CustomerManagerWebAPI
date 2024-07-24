@@ -14,6 +14,10 @@ namespace CustomerManagerWebApiByAlp.Services
         {
             _userRepository = userRepository;
         }
+        public async Task<User> ValidateUser(string username, string password)
+        {
+            return await _userRepository.ValidateUser(username, password);
+        }
 
         public async Task<IEnumerable<User>> GetAllUsersAsync()
         {

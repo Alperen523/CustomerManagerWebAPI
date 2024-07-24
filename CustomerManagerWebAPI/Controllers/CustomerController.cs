@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CustomerManagerWebApiByAlp.Models;
 using CustomerManagerWebApiByAlp.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CustomerManagerWebApiByAlp.Controllers
 {
@@ -19,7 +20,7 @@ namespace CustomerManagerWebApiByAlp.Controllers
             _customerService = customerService;
             _mapper = mapper;
         }
-
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomers()
         {

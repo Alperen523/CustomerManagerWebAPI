@@ -6,6 +6,7 @@ namespace CustomerManagerWebApiByAlp.Services
 {
     public interface IUserService
     {
+        Task<User> ValidateUser(string username, string password);
         Task<IEnumerable<User>> GetAllUsersAsync();
         Task<User> GetUserByIdAsync(int id);
         Task CreateUserAsync(User user);

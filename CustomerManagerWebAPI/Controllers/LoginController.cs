@@ -4,6 +4,10 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CustomerManagerWebApiByAlp.Models;
 using CustomerManagerWebApiByAlp.Services;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace CustomerManagerWebApiByAlp.Controllers
 {
@@ -13,11 +17,13 @@ namespace CustomerManagerWebApiByAlp.Controllers
     {
         private readonly IUserService _userService;
         private readonly IMapper _mapper;
+        private readonly TokenService _tokenService;
 
-        public LoginController(IUserService userService, IMapper mapper)
+        public LoginController(IUserService userService, IMapper mapper, TokenService tokenService)
         {
             _userService = userService;
             _mapper = mapper;
+            _tokenService = tokenService;
         }
 
         [HttpGet]
@@ -75,5 +81,31 @@ namespace CustomerManagerWebApiByAlp.Controllers
             }
             return NoContent();
         }
+
+        [HttpPost("token")]
+        public async Task<IActionResult> GetToken([FromBody] LoginRequest request)
+        {
+            var user = await _userService.ValidateUser(request.Username, request.Password);
+
+            if (user != null)
+            {
+                var tokenString = _tokenService.GenerateToken(request.Username);
+                return Ok(new { Token = tokenString });
+            }
+
+            return Unauthorized();
+        }
+
+        private async Task<bool> IsValidUser(LoginRequest request)
+        {
+            var user = await _userService.ValidateUser(request.Username, request.Password);
+            return user != null;
+        }
+
+
+
+
+
+
     }
 }

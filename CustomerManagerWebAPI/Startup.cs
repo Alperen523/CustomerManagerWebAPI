@@ -8,6 +8,10 @@ using AutoMapper;
 using CustomerManagerWebApiByAlp.Data;
 using CustomerManagerWebApiByAlp.Repositories;
 using CustomerManagerWebApiByAlp.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.OpenApi.Models;
 
 public class Startup
 {
@@ -21,6 +25,25 @@ public class Startup
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddControllers();
+        var key = Encoding.ASCII.GetBytes("11111");
+        services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+      .AddJwtBearer(options =>
+      {
+          options.TokenValidationParameters = new TokenValidationParameters
+          {
+              ValidateIssuer = true,
+              ValidateAudience = true,
+              ValidateLifetime = true,
+              ValidateIssuerSigningKey = true,
+              ValidIssuer = "yourdomain.com",
+              ValidAudience = "yourdomain.com",
+              IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("ThisIsASecretKeyAndShouldBeStoredSafely"))
+          };
+      });
 
         // Veritabaný baðlantýsýný ekleyin
         services.AddDbContext<ApplicationDbContext>(options =>
@@ -46,20 +69,45 @@ public class Startup
         services.AddScoped<ICampaignRepository, CampaignRepository>();
 
         services.AddAutoMapper(typeof(Startup));
+
         services.AddSwaggerGen(c =>
         {
-            c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "My API", Version = "v1" });
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                In = ParameterLocation.Header,
+                Description = "Please enter into field the word 'Bearer' following by space and JWT",
+                Name = "Authorization",
+                Type = SecuritySchemeType.ApiKey,
+                BearerFormat = "JWT",
+                Scheme = "Bearer"
+            });
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement {
+            {
+              new OpenApiSecurityScheme
+              {
+                Reference = new OpenApiReference
+                {
+                  Type = ReferenceType.SecurityScheme,
+                  Id = "Bearer"
+                }
+               },
+               new string[] { }
+             }
         });
+        });
+
         services.AddCors(options =>
         {
             options.AddPolicy("AllowAllOrigins",
                 builder =>
                 {
                     builder.AllowAnyOrigin()
-                           .AllowAnyMethod()
-                           .AllowAnyHeader();
+                           .AllowAnyHeader()
+                           .AllowAnyMethod();
                 });
-        });
+        }); 
+        services.AddSingleton<TokenService>();
 
     }
 
@@ -71,17 +119,25 @@ public class Startup
         }
 
         app.UseHttpsRedirection();
+
         app.UseRouting();
-        app.UseAuthorization();
+
         app.UseCors("AllowAllOrigins");
+
+        app.UseAuthentication();
+        app.UseAuthorization();
+
         app.UseSwagger();
         app.UseSwaggerUI(c =>
         {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "CustomerManagerWebAPI v1");
+            c.RoutePrefix = string.Empty;
         });
+
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapControllers();
         });
     }
+
 }

@@ -7,10 +7,12 @@ using CustomerManagerWebApiByAlp.Models;
 
 namespace CustomerManagerWebApiByAlp.Repositories
 {
+
     public class UserRepository : IUserRepository
     {
-        private readonly ApplicationDbContext _context;
 
+        private readonly ApplicationDbContext _context;
+        
         public UserRepository(ApplicationDbContext context)
         {
             _context = context;
@@ -52,7 +54,11 @@ namespace CustomerManagerWebApiByAlp.Repositories
                 }
             }
         }
+        public async Task<User> ValidateUser(string username, string password)
+        {
+            return await _context.Users.FirstOrDefaultAsync(u => u.Username == username && u.Password == password);
 
+        }
         public async Task<bool> DeleteUserAsync(int id)
         {
             var user = await _context.Users.FindAsync(id);
