@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
+using CustomerManagerWebApiByAlp.Utilities;
 
 public class Startup
 {
@@ -122,7 +123,11 @@ public class Startup
                 });
         }); 
         services.AddSingleton<TokenService>();
-
+        services.AddSingleton<IConfiguration>(Configuration);
+        services.AddHttpClient<CustomerDataSeeder>(client =>
+        {
+            client.BaseAddress = new Uri("https://localhost:44391/api/customer"); // Uygun URL'yi belirtin
+        });
     }
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

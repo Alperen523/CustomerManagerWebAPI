@@ -1,77 +1,90 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using AutoMapper;
+﻿using CustomerManagerWebApiByAlp.Data;
+using CustomerManagerWebApiByAlp.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using CustomerManagerWebApiByAlp.Models;
-using CustomerManagerWebApiByAlp.Services;
-using Microsoft.AspNetCore.Authorization;
 
 namespace CustomerManagerWebApiByAlp.Controllers
 {
-    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class CustomerController : ControllerBase
     {
-        private readonly ICustomerService _customerService;
-        private readonly IMapper _mapper;
+        private readonly ApplicationDbContext _context;
 
-        public CustomerController(ICustomerService customerService, IMapper mapper)
+        public CustomerController(ApplicationDbContext context)
         {
-            _customerService = customerService;
-            _mapper = mapper;
+            _context = context;
         }
-        
+
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomers()
+        public async Task<IActionResult> GetCustomers()
         {
-
-            var customers = await _customerService.GetAllCustomersAsync();
-            return Ok(customers);
+            var allCustomers = await _context.Customers.ToListAsync();
+            return Ok(allCustomers);
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<CustomerDto>> GetCustomer(int id)
+        [HttpPost("seed-customers/{numberOfRecords}")]
+        public async Task<IActionResult> SeedCustomers(int numberOfRecords)
         {
-            var customer = await _customerService.GetCustomerByIdAsync(id);
-            if (customer == null)
+            if (numberOfRecords <= 0)
             {
-                return NotFound();
+                return BadRequest("Number of records must be greater than 0.");
             }
-            return Ok(customer);
+
+            var customers = GenerateRandomCustomers(numberOfRecords);
+
+            await _context.Customers.AddRangeAsync(customers);
+            await _context.SaveChangesAsync();
+
+            return Ok($"{numberOfRecords} customers seeded successfully.");
         }
 
-        [HttpPost]
-        public async Task<ActionResult<CustomerDto>> CreateCustomer(CustomerDto customerDto)
+        private List<Customer> GenerateRandomCustomers(int numberOfRecords)
         {
-            await _customerService.CreateCustomerAsync(customerDto);
-            return CreatedAtAction(nameof(GetCustomer), new { id = customerDto.Id }, customerDto);
+            var customers = new List<Customer>();
+            var random = new Random();
+
+            for (int i = 0; i < numberOfRecords; i++)
+            {
+                var customer = new Customer
+                {
+                    FirstName = GetRandomString(5, random),
+                    LastName = GetRandomString(7, random),
+                    DateOfBirth = GetRandomDate(random),
+                    Address = $"{GetRandomNumber(1000, 9999, random)} {GetRandomString(10, random)} St"
+                };
+                customers.Add(customer);
+            }
+            return customers;
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCustomer(int id, CustomerDto customerDto)
+        private string GetRandomString(int length, Random random)
         {
-            if (id != customerDto.Id)
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+            char[] stringChars = new char[length];
+
+            for (int i = 0; i < length; i++)
             {
-                return BadRequest();
+                stringChars[i] = chars[random.Next(chars.Length)];
             }
-            var result = await _customerService.UpdateCustomerAsync(customerDto);
-            if (!result)
-            {
-                return NotFound();
-            }
-            return NoContent();
+
+            return new string(stringChars);
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCustomer(int id)
+        private DateTime GetRandomDate(Random random)
         {
-            var result = await _customerService.DeleteCustomerAsync(id);
-            if (!result)
-            {
-                return NotFound();
-            }
-            return NoContent();
+            int year = random.Next(1950, 2010);
+            int month = random.Next(1, 13);
+            int day = random.Next(1, 29); // basitlik açısından 28 günle sınırlıyoruz
+            return new DateTime(year, month, day);
+        }
+
+        private int GetRandomNumber(int min, int max, Random random)
+        {
+            return random.Next(min, max);
         }
     }
 }
