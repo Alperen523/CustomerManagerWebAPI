@@ -14,8 +14,8 @@ namespace CustomerManagerWebApiByAlp.Services
 
         public TokenService()
         {
-            // Bu değerleri config dosyalarından veya sabit olarak alabilirsiniz
-            _secretKey = "ThisIsASecretKeyAndShouldBeStoredSafely"; // Bu anahtarı güvenli bir yerde saklayın
+       
+            _secretKey = "ThisIsASecretKeyAndShouldBeStoredSafely"; 
             _issuer = "yourdomain.com";
             _audience = "yourdomain.com";
         }

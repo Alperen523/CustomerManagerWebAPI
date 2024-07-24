@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace CustomerManagerWebApiByAlp.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class CustomerController : ControllerBase
@@ -20,10 +21,11 @@ namespace CustomerManagerWebApiByAlp.Controllers
             _customerService = customerService;
             _mapper = mapper;
         }
-        [Authorize]
+        
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomers()
         {
+
             var customers = await _customerService.GetAllCustomersAsync();
             return Ok(customers);
         }

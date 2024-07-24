@@ -25,31 +25,32 @@ public class Startup
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddControllers();
-        var key = Encoding.ASCII.GetBytes("11111");
-        services.AddAuthentication(options =>
+        var key = Encoding.ASCII.GetBytes("ThisIsASecretKeyAndShouldBeStoredSafely");
+        services.AddAuthentication(x =>
         {
-            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        })
-      .AddJwtBearer(options =>
-      {
-          options.TokenValidationParameters = new TokenValidationParameters
-          {
-              ValidateIssuer = true,
-              ValidateAudience = true,
-              ValidateLifetime = true,
-              ValidateIssuerSigningKey = true,
-              ValidIssuer = "yourdomain.com",
-              ValidAudience = "yourdomain.com",
-              IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("ThisIsASecretKeyAndShouldBeStoredSafely"))
-          };
-      });
+            x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        }).AddJwtBearer(x =>
+        {
+            x.RequireHttpsMetadata = false;
+            x.SaveToken = true;
+            x.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = true,
+                ValidIssuer = "yourdomain.com",
+                ValidateAudience = true,
+                ValidAudience = "yourdomain.com",
+                ValidateLifetime = true
+            };
+        });
 
-        // Veritabaný baðlantýsýný ekleyin
+       
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
 
-        // Servisleri ve repositoryleri DI konteynerine ekleyin
+        
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<ICustomerService, CustomerService>();
 
@@ -73,28 +74,27 @@ public class Startup
         services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "My API", Version = "v1" });
+
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 In = ParameterLocation.Header,
-                Description = "Please enter into field the word 'Bearer' following by space and JWT",
+                Description = "Please insert JWT with Bearer into field",
                 Name = "Authorization",
                 Type = SecuritySchemeType.ApiKey,
                 BearerFormat = "JWT",
                 Scheme = "Bearer"
             });
+
             c.AddSecurityRequirement(new OpenApiSecurityRequirement {
-            {
-              new OpenApiSecurityScheme
-              {
-                Reference = new OpenApiReference
-                {
-                  Type = ReferenceType.SecurityScheme,
-                  Id = "Bearer"
-                }
-               },
-               new string[] { }
-             }
-        });
+    {
+        new OpenApiSecurityScheme {
+            Reference = new OpenApiReference {
+                Type = ReferenceType.SecurityScheme,
+                Id = "Bearer"
+            }
+        },
+        new string[] { }
+         }});
         });
 
         services.AddCors(options =>
@@ -126,6 +126,15 @@ public class Startup
 
         app.UseAuthentication();
         app.UseAuthorization();
+        app.Use(async (context, next) =>
+        {
+            // Log the token
+            var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+            Console.WriteLine($"Token: {token}");
+
+            await next.Invoke();
+        });
+
 
         app.UseSwagger();
         app.UseSwaggerUI(c =>
