@@ -2,39 +2,38 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 namespace CustomerManagerWebApiByAlp.Services
 {
-    public class TokenService
+    public class TokenService : ITokenService
     {
-        private readonly string _secretKey;
-        private readonly string _issuer;
-        private readonly string _audience;
+        private readonly IConfiguration _configuration;
 
-        public TokenService()
+        public TokenService(IConfiguration configuration)
         {
-       
-            _secretKey = "ThisIsASecretKeyAndShouldBeStoredSafely"; 
-            _issuer = "yourdomain.com";
-            _audience = "yourdomain.com";
+            _configuration = configuration;
         }
 
         public string GenerateToken(string username)
         {
+            var jwtSettings = _configuration.GetSection("Jwt");
+            var key = Encoding.ASCII.GetBytes(jwtSettings["Key"]);
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_secretKey);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[]
                 {
-                    new Claim(ClaimTypes.Name, username)
+                    new Claim(JwtRegisteredClaimNames.Sub, username),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
                 }),
-                Expires = DateTime.UtcNow.AddDays(7),
-                Issuer = _issuer,
-                Audience = _audience,
+                Expires = DateTime.UtcNow.AddMinutes(30),
+                Issuer = jwtSettings["Issuer"],
+                Audience = jwtSettings["Audience"],
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
+
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
